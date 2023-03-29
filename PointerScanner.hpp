@@ -17,5 +17,8 @@ class PointerScanner {
         std::vector<DWORD64> firstCellFilter(HANDLE processHandle, std::vector<MEMORY_BASIC_INFORMATION> usefulPages, BYTE cmpValue);
     private:
         ProcessManager procMan;
-        void changeCellValue(HANDLE processHandle, DWORD64 cellAddr, BYTE valueToWrite);
+        void changeCellValue(HANDLE processHandle, DWORD64 cellAddr, DWORD64 valueToWrite, unsigned int bytesAmount);
+        void changeSingleCellValue(HANDLE processHandle, DWORD64 cellAddr, BYTE valueToWrite);
+        void changeTwoCellValuesBE(HANDLE processHandle, DWORD64 cellAddr, WORD valueToWrite);
+        void changeTwoCellValuesLE(HANDLE processHandle, DWORD64 cellAddr, WORD valueToWrite);
 };
