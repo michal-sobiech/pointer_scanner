@@ -6,7 +6,7 @@
 #include <chrono>
 #include <bits/stdc++.h>
 
-#include "PointerScanner.hpp"
+#include "UI.hpp"
 
 #define BYTES_PER_CELL 8
 #define ADDRESS_LISTING_TRESHOLD 5  // The max number of addresses found that will result in printing them out
@@ -21,13 +21,10 @@ void sleep(unsigned int timeInSec){
 }
 
 int main(){
-    PointerScanner pointerScanner = PointerScanner();
+    UI userInterface = UI();
 
-    printf("Enter the program name: ");
-    std::string windowName;
-    std::getline(std::cin, windowName);
     try {
-        pointerScanner.scanPointers(windowName);
+        userInterface.start();
     }
     catch (std::invalid_argument& exception){
         printf("===== ERROR =====\n");

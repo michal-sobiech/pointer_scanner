@@ -2,109 +2,17 @@
 #include <algorithm>
 #include "PointerScanner.hpp"
 
-#define MAX_PROCESSED_ADDRS 2000000
-#define FIRST_FILTER_BUFFER_SIZE 2000000
-#define CELL_SIZE 4
-#define SMALL_CELL_AMOUNT 5
-
 
 PointerScanner::PointerScanner() {
     this->procMan = ProcessManager(); 
 }
 
-void PointerScanner::scanPointers(std::string windowName){
-    HANDLE processHandle = procMan.getProcessHandle(windowName, PROCESS_ALL_ACCESS);
-    
-    printf("Enter the value to find: \n");
-    DWORD64 valueToFind = 0;
-    scanf("%d", &valueToFind);
+HANDLE PointerScanner::getProcessHandle(std::string windowName) {
+    return procMan.getProcessHandle(windowName, PROCESS_ALL_ACCESS);
+}
 
-    std::vector<DWORD64> cellsToCheck = firstCellFilter(
-        processHandle,
-        procMan.getUsefulPages(processHandle),
-        valueToFind
-    );
-
-    printf("Cells with value %d: %d\n", valueToFind, cellsToCheck.size());
-
-    while (true){
-        
-        printf("Enter the value to find: \n");
-        DWORD64 valueToFind = 0;
-        scanf("%d", &valueToFind);
-
-        cellsToCheck = filterCells(
-            processHandle,
-            cellsToCheck,
-            valueToFind
-        );
-
-        printf("Cells with value %d: %d\n", valueToFind, cellsToCheck.size());
-
-        if (cellsToCheck.size() == 0) {
-            return;
-        }
-        if (cellsToCheck.size() < SMALL_CELL_AMOUNT) {
-            printf("Small number of cells, printing out the addresses (in dec):\n");
-            for (DWORD64 cellAddr : cellsToCheck) {
-                printf("%x\n", cellAddr);
-                printf("%d\n", cellAddr);
-            }
-            printf("What do you want to do now?\n"
-                   "1 - keep searching\n"
-                   "2 - change the value\n");
-            unsigned int input;
-            std::cin >> input;
-            if (input == 1) {
-                continue;
-            }
-            else {
-                printf("What do you want to do now?\n"
-                       "1 - change singular byte\n"
-                       "2 - change the value of 2 bytes (current and next)\n"
-                       "3 - change the value of 2 bytes (previous and next)\n");
-                std::cin >> input;
-
-                printf("Choose the address:\n");
-                for (unsigned int i = 0; i < cellsToCheck.size(); i++) {
-                    printf("%d - %x\n", i + 1, cellsToCheck.at(i));
-                }
-                std::cin >> input;
-                DWORD64 cellAddr = cellsToCheck.at(input - 1);
-
-                printf("Choose the value to write:\n");
-                unsigned int valueToWrite;
-                std::cin >> valueToWrite;
-
-                switch (input) {
-                    case 1:
-                        changeSingleCellValue(
-                            processHandle,
-                            cellAddr,
-                            (BYTE)valueToWrite
-                        );
-                        break;
-                    case 2:
-                        changeTwoCellValuesBE(
-                            processHandle,
-                            cellAddr,
-                            (WORD)valueToWrite
-                        );
-                        break;
-                    case 3:
-                        changeTwoCellValuesLE(
-                            processHandle,
-                            cellAddr,
-                            (WORD)valueToWrite
-                        );
-                        break;
-                    default:
-                        printf("invalid option");
-                }    
-                return;
-            }
-        }
-    }
+std::vector<MEMORY_BASIC_INFORMATION> PointerScanner::getUsefulPages(HANDLE processHandle) {
+    return procMan.getUsefulPages(processHandle);
 }
 
 std::vector<DWORD64> PointerScanner::filterCells(HANDLE processHandle, std::vector<DWORD64> cellsToCheck, BYTE cmpValue){
@@ -214,7 +122,7 @@ std::vector<DWORD64> PointerScanner::firstCellFilter(HANDLE processHandle, std::
     return cellsMeetingCriteria;
 }
 
-void PointerScanner::changeCellValue(HANDLE processHandle, DWORD64 cellAddr, DWORD64 valueToWrite, unsigned int bytesAmount) {
+void PointerScanner::changeCellValue(HANDLE processHandle, DWORD64 cellAddr, BYTE valueToWrite, unsigned int bytesAmount) {
     printf(
         "Placing %d in the cell %x.\n",
         valueToWrite,
@@ -234,14 +142,3 @@ void PointerScanner::changeCellValue(HANDLE processHandle, DWORD64 cellAddr, DWO
     }
 }
 
-void PointerScanner::changeSingleCellValue(HANDLE processHandle, DWORD64 cellAddr, BYTE valueToWrite) {
-    changeCellValue(processHandle, cellAddr, (DWORD64)valueToWrite, 1);
-}
-
-void PointerScanner::changeTwoCellValuesBE(HANDLE processHandle, DWORD64 cellAddr, WORD valueToWrite) {
-    changeCellValue(processHandle, cellAddr, (DWORD64)valueToWrite, 2);
-}
-
-void PointerScanner::changeTwoCellValuesLE(HANDLE processHandle, DWORD64 cellAddr, WORD valueToWrite) {
-    changeCellValue(processHandle, cellAddr-1, (DWORD64)valueToWrite, 2);
-}
